@@ -1,6 +1,6 @@
 ## Portfolio Summary
 
-### 🚀 Software Engineer | AI & IoT Innovator | Blockchain & Cybersecurity Specialist  
+### 🚀 Head of Engineering | AI & IoT Innovator | Blockchain & Cybersecurity Specialist  
 🔗 [www.arithaai.com](https://www.arithaai.com)  
 📍 Based in South Africa | 🌍 Collaborating with global teams from Silicon Valley to Europe  
 
@@ -8,8 +8,8 @@
 
 ## 🧠 About Me  
 
-I’m an experienced **Software Engineer and Machine Learning Specialist** with a strong foundation in **C++**, **Python**, and **Swift**, combined with expertise in **Blockchain** and **Cybersecurity**.  
-My work blends **deep learning** **AI system architecture**, **embedded engineering**, and **mathematical modeling** to build scalable and intelligent software ecosystems.  
+I’m an experienced **Technical Lead Software Engineer and Machine Learning Specialist** with a strong foundation in **C++**, **Python**, and **Swift**, combined with expertise in **Blockchain** and **Cybersecurity** .  
+My work blends **deep learning with CUDA C++** **AI system architecture**, **embedded engineering**, and **mathematical modeling** to build scalable and intelligent software ecosystems.  
 
 ---
 
@@ -52,7 +52,7 @@ Partnered with forward-thinking startups and enterprises across:
 ## 🎖️ Professional Memberships & Developer Programs  
 
 <div align="center">
-  <img src="./a7bae67e-aa4d-4141-9826-fb051d2a6032.jpg" alt="NVIDIA Developer Program - Lerato Mokoena" width="350"/>
+  <img src="./.jpg" alt="NVIDIA Developer Program - Lerato Mokoena" width="350"/>
 
   **🟩 NVIDIA Developer Program Member**  
   _Member Since: March 2025_  
