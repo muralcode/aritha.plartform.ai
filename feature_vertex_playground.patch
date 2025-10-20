@@ -1,0 +1,675 @@
+*** Begin Patch
+*** Add File: README.md
++# Aritha AI — Aritha Platform
++
++**Lerato Mokoena** — Founder & Chief Engineer — Aritha AI (Pty Ltd)  
++Website: https://www.arithaai.com
++
++Aritha AI stands at the vanguard of artificial intelligence and IoT innovation. We deliver bespoke SaaS, embedded firmware, and AI model solutions for healthcare, finance, security, and industrial automation.
++
++---
++
++## Highlights
++
++- **Languages & Frameworks:** C++, Python, Swift, Rust  
++- **Machine Learning:** PyTorch, TensorFlow, ONNX, LLMs, RL, GARCH modeling  
++- **Blockchain & Security:** Smart contracts, Web3 integrations, firmware security  
++- **IoT & Embedded:** ESP32, Raspberry Pi, MQTT, RTOS, edge inference  
++- **Architecture:** Clean Architecture, SOLID, microservices, TDD  
++- **Cloud & DevOps:** Docker, Kubernetes, Google Cloud (Vertex AI, Cloud Run), AWS
++
++---
++
++## NVIDIA Developer Program
++
++<div align="center">
++  <img src="./assets/img/nvidia.jpg" alt="NVIDIA Developer Program" width="360" />
++  <p><strong>Member — NVIDIA Developer Program</strong></p>
++</div>
++
++---
++
++## Cloud Playground — Demo with Vertex AI / Cloud Run
++
++This repo contains a static frontend and a small backend proxy for a secure Cloud Playground demo. The backend proxies requests to a model endpoint (Hugging Face, Vertex AI, or any Cloud Run model).
++
++**This PR adds:**
++- `server/` — FastAPI proxy service that safely forwards prompts to an external model endpoint (Vertex/Cloud Run) using server-side secrets.
++- `static/index.html` — updated UI with a Cloud Playground modal and JS that calls `/api/v1/generate`.
++- `vertex/` — helper for direct Vertex calls.
++- `server/allowed_models.json` — whitelist of permitted model IDs.
++- `docker-compose.yml` — local dev compose for frontend + backend.
++
++---
++
++## Quickstart — Local
++
++1. Clone the repo and create the feature branch:
++```bash
++git checkout -b feature/vertex-cloudplayground-integration
++```
++
++2. Backend (server):
++```bash
++cd server
++cp .env.example .env
++# Edit .env and add appropriate envs; do NOT commit your secrets.
++python -m venv .venv
++source .venv/bin/activate
++pip install -r requirements.txt
++uvicorn main:app --reload --host 0.0.0.0 --port 8000
++```
++
++3. Frontend:
++- Serve the `static/` directory (e.g., `python -m http.server 5500` inside `static/`)
++- If the backend is `http://localhost:8000`, the JS uses a **relative** path. If hosting separately, set `window.__ARITHA_API_URL`.
++
++---
++
++## Docker
++
++Build and run the backend:
++```bash
++cd server
++docker build -t aritha-playground:latest .
++docker run -p 8080:8080 --env-file .env aritha-playground:latest
++```
++
++---
++
++## Deploy to Cloud Run (recommended: use Secret Manager)
++
++1. Build & push image:
++```bash
++gcloud config set project YOUR_PROJECT_ID
++gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/aritha-playground:latest
++```
++
++2. Deploy (example using env var — production: use Secret Manager rather than CLI envs):
++```bash
++gcloud run deploy aritha-playground \
++  --image gcr.io/YOUR_PROJECT_ID/aritha-playground:latest \
++  --region us-central1 \
++  --platform managed \
++  --allow-unauthenticated \
++  --set-env-vars EXTERNAL_MODEL_URL="https://your-cloud-run-url",ALLOWED_ORIGINS="https://muralcode.github.io"
++```
++
++**Secure option:** Use Google Secret Manager and `--update-secrets`.
++
++---
++
++## Vertex specifics
++
++You can call Vertex directly by using a service account token; see `vertex/vertex_client.py` for a helper. When deploying to Cloud Run, prefer Workload Identity or Secret Manager rather than bundling service account keys.
++
++---
++
++## Development notes & security
++
++- Never embed API keys in client-side JS.
++- Use Secret Manager for production secrets and restrict CORS origins.
++- Add per-user quotas for public demos to prevent abuse.
++
+*** End Patch
+*** End Patch
+*** Begin Patch
+*** Add File: PR_DESCRIPTION.md
++# PR: Vertex Cloud Playground Integration
++
++This PR adds a Cloud Playground integration that allows the static site to run small demo prompts against a configured model endpoint.
++
++- Adds `server/` (FastAPI) to proxy requests to an external model (Cloud Run/Vertex)
++- Adds `vertex/vertex_client.py` as a reference for direct Vertex integration
++- Updates `static/index.html` to include a Cloud Playground modal and JS
++- Adds `.env.example`, Dockerfile, and requirements for the backend
++- Adds server-side whitelist, caching, and Vertex provider option
++
++**Notes**
++- API keys and endpoint URL are read from env vars. For production, use Google Secret Manager and do not store keys in git.
++- Default EXTERNAL_MODEL_URL in `.env.example` is an example. Do not commit real keys.
+*** End Patch
+*** Begin Patch
+*** Add File: server/requirements.txt
++fastapi==0.96.0
++uvicorn[standard]==0.22.0
++httpx==0.24.1
++pydantic==1.10.11
++google-auth==2.20.0
++redis==4.6.0
+*** End Patch
+*** Begin Patch
+*** Add File: server/.env.example
++# Server config
++# MODEL_PROVIDER: EXTERNAL (default) | VERTEX
++MODEL_PROVIDER=VERTEX
++
++# EXTERNAL proxy example (use if MODEL_PROVIDER=EXTERNAL)
++EXTERNAL_MODEL_URL=https://your-cloud-run-proxy.example.com
++EXTERNAL_API_KEY=
++
++# If using VERTEX provider:
++# Prefer using ADC (Workload Identity). If using a key file for local development point to SERVICE_ACCOUNT_FILE.
++SERVICE_ACCOUNT_FILE=
++VERTEX_PROJECT_ID=
++VERTEX_LOCATION=us-central1
++VERTEX_MODEL=
++
++# CORS allowed origins (comma separated)
++ALLOWED_ORIGINS=https://muralcode.github.io,http://localhost:5500
++
++# Optional Redis cache URL (if set, redis used)
++REDIS_URL=
++
++# Cache TTL seconds for in-memory fallback (default 300s)
++CACHE_TTL=300
++
++# Allowed models whitelist file (relative to server/)
++ALLOWED_MODELS_FILE=./allowed_models.json
++
++# For production, use Secret Manager rather than placing keys in ENV.
+*** End Patch
+*** Begin Patch
+*** Add File: server/allowed_models.json
++[
++  "text-bison",
++  "text-bison@001",
++  "gpt2",
++  "orac-2b",
++  "zen-7b"
++]
+*** End Patch
+*** Begin Patch
+*** Add File: server/Dockerfile
++FROM python:3.11-slim
++
++WORKDIR /app
++ENV PYTHONUNBUFFERED=1
++ENV PORT=8080
++
++# Install build deps
++RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
++
++COPY requirements.txt .
++RUN pip install --no-cache-dir -r requirements.txt
++
++COPY . .
++
++EXPOSE 8080
++
++CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--timeout-keep-alive", "120"]
+*** End Patch
+*** Begin Patch
+*** Add File: server/main.py
++import os
++import time
++import json
++import logging
++import hashlib
++import asyncio
++from typing import Optional, Dict, Any
++
++from fastapi import FastAPI, HTTPException, Request
++from fastapi.middleware.cors import CORSMiddleware
++from pydantic import BaseModel
++import httpx
++from starlette.responses import JSONResponse
++
++# Optional imports for vertex/auth/redis
++try:
++    from google.oauth2 import service_account
++    from google.auth.transport.requests import Request as GoogleRequest
++    _HAS_GOOGLE_AUTH = True
++except Exception:
++    _HAS_GOOGLE_AUTH = False
++
++try:
++    import redis.asyncio as aioredis
++    _HAS_REDIS = True
++except Exception:
++    aioredis = None
++    _HAS_REDIS = False
++
++# Logging
++logging.basicConfig(level=logging.INFO)
++logger = logging.getLogger("aritha-playground")
++
++# Config
++MODEL_PROVIDER = os.getenv("MODEL_PROVIDER", "EXTERNAL").upper()
++EXTERNAL_MODEL_URL = os.getenv("EXTERNAL_MODEL_URL", "").strip()
++EXTERNAL_API_KEY = os.getenv("EXTERNAL_API_KEY", "").strip()
++ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "https://muralcode.github.io").split(",") if o.strip()]
++SERVICE_ACCOUNT_FILE = os.getenv("SERVICE_ACCOUNT_FILE", "").strip()
++VERTEX_PROJECT_ID = os.getenv("VERTEX_PROJECT_ID", "").strip()
++VERTEX_LOCATION = os.getenv("VERTEX_LOCATION", "us-central1").strip()
++
++ALLOWED_MODELS_FILE = os.getenv("ALLOWED_MODELS_FILE", "./allowed_models.json")
++CACHE_TTL = int(os.getenv("CACHE_TTL", "300"))
++REDIS_URL = os.getenv("REDIS_URL", "").strip()
++
++if not ALLOWED_ORIGINS:
++    ALLOWED_ORIGINS = ["https://muralcode.github.io"]
++
++# Load allowed models whitelist
++try:
++    with open(ALLOWED_MODELS_FILE, "r", encoding="utf-8") as f:
++        ALLOWED_MODELS = set(json.load(f))
++    logger.info("Loaded %d allowed models from %s", len(ALLOWED_MODELS), ALLOWED_MODELS_FILE)
++except Exception as e:
++    logger.warning("Failed to load allowed models file '%s' (%s). Defaulting to empty whitelist (no hints allowed).", ALLOWED_MODELS_FILE, e)
++    ALLOWED_MODELS = set()
++
++# Redis client (optional)
++redis_client = None
++if REDIS_URL and _HAS_REDIS:
++    try:
++        redis_client = aioredis.from_url(REDIS_URL, decode_responses=True)
++        logger.info("Redis cache configured at %s", REDIS_URL)
++    except Exception as e:
++        logger.warning("Failed to init redis at %s: %s", REDIS_URL, e)
++        redis_client = None
++else:
++    if REDIS_URL and not _HAS_REDIS:
++        logger.warning("REDIS_URL set but redis package not installed. Falling back to in-memory cache.")
++
++# In-memory cache fallback (simple TTL cache)
++memory_cache: Dict[str, Dict[str, Any]] = {}
++memory_cache_lock = asyncio.Lock()
++
++app = FastAPI(title="Aritha Playground API (Vertex-enabled)")
++
++# CORS
++app.add_middleware(
++    CORSMiddleware,
++    allow_origins=ALLOWED_ORIGINS,
++    allow_credentials=True,
++    allow_methods=["GET", "POST"],
++    allow_headers=["*"],
++)
++
++# Pydantic models
++class GenerateRequest(BaseModel):
++    prompt: str
++    max_tokens: Optional[int] = 256
++    temperature: Optional[float] = 0.2
++    model: Optional[str] = None
++
++class GenerateResponse(BaseModel):
++    text: str
++    meta: Optional[Dict[str, Any]]
++
++# Helpers: cache key
++def _make_cache_key(prompt: str, model: Optional[str], max_tokens: int, temperature: float) -> str:
++    h = hashlib.sha256()
++    h.update(prompt.encode("utf-8"))
++    h.update(b"\x00")
++    h.update((model or "").encode("utf-8"))
++    h.update(b"\x00")
++    h.update(str(max_tokens).encode("utf-8"))
++    h.update(b"\x00")
++    h.update(str(temperature).encode("utf-8"))
++    return h.hexdigest()
++
++async def cache_get(key: str) -> Optional[str]:
++    if redis_client:
++        try:
++            val = await redis_client.get(key)
++            return val
++        except Exception as e:
++            logger.warning("Redis get failed: %s", e)
++            # fallthrough to memory
++    async with memory_cache_lock:
++        item = memory_cache.get(key)
++        if not item:
++            return None
++        if item["expiry"] < time.time():
++            # expired
++            memory_cache.pop(key, None)
++            return None
++        return item["value"]
++
++async def cache_set(key: str, value: str, ttl: int = CACHE_TTL):
++    if redis_client:
++        try:
++            await redis_client.set(key, value, ex=ttl)
++            return
++        except Exception as e:
++            logger.warning("Redis set failed: %s", e)
++            # fallthrough to memory
++    async with memory_cache_lock:
++        memory_cache[key] = {"value": value, "expiry": time.time() + ttl}
++
++# Vertex helpers
++async def _get_vertex_access_token() -> str:
++    """
++    Obtain an access token using service account JSON if provided,
++    otherwise attempt to rely on Application Default Credentials.
++    """
++    if not _HAS_GOOGLE_AUTH:
++        raise RuntimeError("google-auth not installed; cannot obtain Vertex access token")
++    if SERVICE_ACCOUNT_FILE:
++        creds = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=["https://www.googleapis.com/auth/cloud-platform"])
++        creds.refresh(GoogleRequest())
++        return creds.token
++    # Try ADC
++    from google.auth import default
++    creds, _ = default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
++    creds.refresh(GoogleRequest())
++    return creds.token
++
++async def _call_vertex_model(project_id: str, location: str, model: str, prompt: str, access_token: str, max_tokens: int = 256, temperature: float = 0.2):
++    """
++    Call Vertex generative model REST endpoint. The exact body shape depends on your model.
++    We attempt a generic 'predict' call and try to extract text heuristically.
++    """
++    url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/models/{model}:predict"
++    headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
++    payload = {
++        "instances": [{"content": prompt}],
++        "parameters": {"temperature": temperature, "maxOutputTokens": max_tokens}
++    }
++    async with httpx.AsyncClient(timeout=120) as client:
++        r = await client.post(url, headers=headers, json=payload)
++        if r.status_code >= 400:
++            logger.error("Vertex model error %s: %s", r.status_code, r.text)
++            raise HTTPException(status_code=502, detail=f"Vertex model error: {r.text}")
++        data = r.json()
++    # Heuristics to extract text
++    try:
++        preds = data.get("predictions") or data.get("instances")
++        if isinstance(preds, list) and len(preds) > 0:
++            first = preds[0]
++            if isinstance(first, dict):
++                if "content" in first:
++                    return first["content"]
++                if "candidates" in first and isinstance(first["candidates"], list) and len(first["candidates"]) > 0:
++                    cand = first["candidates"][0]
++                    if isinstance(cand, dict) and "content" in cand:
++                        return cand["content"]
++        if "candidates" in data and isinstance(data["candidates"], list) and len(data["candidates"]) > 0:
++            c = data["candidates"][0]
++            if isinstance(c, dict) and "content" in c:
++                return c["content"]
++    except Exception as e:
++        logger.debug("Vertex parse heuristic failed: %s", e)
++    return json.dumps(data, indent=2)
++
++# External proxy call for EXTERNAL provider
++async def call_external(url: str, prompt: str, max_tokens: int, temperature: float, api_key: Optional[str] = None):
++    if not url:
++        raise HTTPException(status_code=500, detail="External model URL not configured.")
++    headers = {"Content-Type": "application/json"}
++    if api_key and "?" not in url:
++        headers["Authorization"] = f"Bearer {api_key}"
++    payload = {"prompt": prompt, "max_tokens": max_tokens, "temperature": temperature}
++    async with httpx.AsyncClient(timeout=120) as client:
++        r = await client.post(url, headers=headers, json=payload)
++        if r.status_code >= 400:
++            logger.error("External proxy error %s - %s", r.status_code, r.text)
++            raise HTTPException(status_code=502, detail=f"External model error: {r.text}")
++        try:
++            data = r.json()
++        except Exception:
++            return r.text
++    if isinstance(data, dict):
++        if "text" in data:
++            return data["text"]
++        if "generated_text" in data:
++            return data["generated_text"]
++    return str(data)
++
++@app.get("/health")
++async def health():
++    return {"status": "ok", "provider": MODEL_PROVIDER}
++
++@app.post("/api/v1/generate", response_model=GenerateResponse)
++async def generate(req: GenerateRequest, request: Request):
++    start = time.time()
++    prompt = req.prompt.strip()
++    if not prompt:
++        raise HTTPException(status_code=400, detail="Prompt required.")
++    if len(prompt) > 200_000:
++        raise HTTPException(status_code=400, detail="Prompt too long.")
++
++    # Validate model hint against whitelist (if provided)
++    model_hint = req.model.strip() if req.model else None
++    if model_hint:
++        if ALLOWED_MODELS and model_hint not in ALLOWED_MODELS:
++            raise HTTPException(status_code=400, detail=f"Model hint '{model_hint}' not allowed.")
++
++    key = _make_cache_key(prompt, model_hint, req.max_tokens, req.temperature)
++    # Try cache
++    cached = await cache_get(key)
++    if cached:
++        return JSONResponse({"text": cached, "meta": {"duration_s": 0.0, "provider": MODEL_PROVIDER, "cached": True}})
++
++    try:
++        if MODEL_PROVIDER == "EXTERNAL":
++            generated = await call_external(EXTERNAL_MODEL_URL, prompt, req.max_tokens, req.temperature, EXTERNAL_API_KEY)
++        elif MODEL_PROVIDER == "VERTEX":
++            if not _HAS_GOOGLE_AUTH:
++                raise HTTPException(status_code=500, detail="Server missing google-auth dependency for Vertex provider.")
++            model_to_use = model_hint or os.getenv("VERTEX_MODEL", "")
++            if not model_to_use:
++                raise HTTPException(status_code=400, detail="No Vertex model specified (set VERTEX_MODEL env var or pass model hint).")
++            access_token = await _get_vertex_access_token()
++            generated = await _call_vertex_model(VERTEX_PROJECT_ID, VERTEX_LOCATION, model_to_use, prompt, access_token, req.max_tokens, req.temperature)
++        else:
++            raise HTTPException(status_code=500, detail=f"Unsupported MODEL_PROVIDER '{MODEL_PROVIDER}'")
++    except HTTPException:
++        raise
++    except Exception as e:
++        logger.exception("Generation failure")
++        raise HTTPException(status_code=500, detail=str(e))
++
++    # store in cache
++    try:
++        await cache_set(key, generated, ttl=CACHE_TTL)
++    except Exception as e:
++        logger.debug("Cache set failed: %s", e)
++
++    duration = round(time.time() - start, 3)
++    return JSONResponse({"text": generated, "meta": {"duration_s": duration, "provider": MODEL_PROVIDER, "cached": False}})
++
++@app.get("/")
++async def root():
++    return {"message": "Aritha Playground API", "provider": MODEL_PROVIDER}
+*** End Patch
+*** Begin Patch
+*** Add File: vertex/vertex_client.py
++"""
++Helpers to call Vertex Generative API directly (optional).
++This module demonstrates how to obtain an access token using google-auth
++and call Vertex REST endpoints. It is optional — the current server
++proxies to your Cloud Run deployed model.
++"""
++
++import os
++import json
++import httpx
++from google.auth.transport.requests import Request
++from google.oauth2 import service_account
++
++# Set GOOGLE_APPLICATION_CREDENTIALS env var to a service account JSON key file path or
++# use workload identity if running on GCP.
++def get_access_token_from_service_account(sa_keyfile: str, scopes=None):
++    scopes = scopes or ["https://www.googleapis.com/auth/cloud-platform"]
++    credentials = service_account.Credentials.from_service_account_file(sa_keyfile, scopes=scopes)
++    credentials.refresh(Request())
++    return credentials.token
++
++async def call_vertex_model(project_id: str, location: str, model: str, prompt: str, access_token: str):
++    url = f"https://{location}-aiplatform.googleapis.com/v1/projects/{project_id}/locations/{location}/models/{model}:predict"
++    headers = {
++        "Authorization": f"Bearer {access_token}",
++        "Content-Type": "application/json"
++    }
++    payload = {
++        "instances": [{"content": prompt}],
++        "parameters": {"temperature": 0.2, "maxOutputTokens": 256}
++    }
++    async with httpx.AsyncClient(timeout=60) as client:
++        r = await client.post(url, headers=headers, json=payload)
++        r.raise_for_status()
++        return r.json()
+*** End Patch
+*** Begin Patch
+*** Add File: static/index.html
++<!DOCTYPE html>
++<html lang="en">
++<head>
++  <meta charset="utf-8" />
++  <meta name="viewport" content="width=device-width,initial-scale=1" />
++  <title>Aritha AI - Intelligence Everywhere</title>
++  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600&display=swap" rel="stylesheet" />
++  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
++  <style>
++    :root{--primary-purple:#A855F7;--primary-orange:#F59E0B;--bg-light:#FFFFFF;--bg-gradient:linear-gradient(to right,#A855F7,#F59E0B);--text-dark:#1F2937;--text-light:#6B7280;--border-light:#E5E7EB;--shadow-light:0 4px 6px -1px rgba(0,0,0,0.1);--button-bg:#000000;--button-text:#FFFFFF}
++    body{font-family:'Inter',sans-serif;margin:0;color:var(--text-dark)}
++    header{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;background:rgba(255,255,255,0.6);backdrop-filter:blur(6px)}
++    .logo{font-weight:300;color:var(--primary-purple)}
++    .btn{padding:0.9rem 1.6rem;border-radius:8px;border:none;cursor:pointer}
++    .btn-primary{background:var(--button-bg);color:var(--button-text)}
++    .btn-secondary{background:transparent;border:1px solid var(--border-light)}
++    .hero{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem;background:var(--bg-gradient);color:#fff}
++    .modal{display:none;position:fixed;z-index:1002;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.4)}
++    .modal-content{background:#fff;margin:6% auto;padding:20px;width:90%;max-width:900px;border-radius:8px}
++    pre{white-space:pre-wrap;background:#f3f4f6;padding:1rem;border-radius:6px}
++  </style>
++</head>
++<body data-theme="light">
++  <header>
++    <div class="logo">Aritha AI</div>
++    <nav>
++      <a href="#platform" style="margin-right:1rem">Platform</a>
++      <a href="#models" style="margin-right:1rem">Models</a>
++      <a href="#pricing" style="margin-right:1rem">Pricing</a>
++      <a href="#docs">Docs</a>
++    </nav>
++    <div style="display:flex;gap:1rem;align-items:center">
++      <a href="https://github.com" class="icon-btn"><i class="fab fa-github"></i></a>
++      <button class="btn" onclick="toggleTheme()">Theme</button>
++    </div>
++  </header>
++
++  <main>
++    <section class="hero">
++      <h1 style="font-size:3rem">Intelligence everywhere.</h1>
++      <p style="max-width:720px;margin-top:1rem">Effortlessly ship powerful and performant AI—deploy to any device in minutes.</p>
++      <div style="margin-top:2rem;display:flex;gap:1rem">
++        <a class="btn btn-primary" id="openPlaygroundBtn">Cloud Playground</a>
++        <a class="btn btn-secondary" href="#docs">Read documentation</a>
++      </div>
++    </section>
++  </main>
++
++  <!-- Cloud Playground Modal -->
++  <div id="playgroundModal" class="modal">
++    <div class="modal-content">
++      <span style="float:right;cursor:pointer" onclick="closePlayground()">&times;</span>
++      <h2>Cloud Playground</h2>
++      <p>Run a quick demo using the configured backend (Vertex Cloud Run proxy).</p>
++
++      <div style="display:flex;gap:8px;margin-bottom:8px;">
++        <input id="modelInput" placeholder="(optional) model hint" style="flex:1;padding:8px;border-radius:6px;border:1px solid #e5e7eb"/>
++        <select id="tempSelect" style="padding:8px;border-radius:6px;border:1px solid #e5e7eb">
++          <option value="0.2">Temp 0.2</option>
++          <option value="0.5">Temp 0.5</option>
++          <option value="0.8">Temp 0.8</option>
++        </select>
++      </div>
++
++      <textarea id="playgroundPrompt" rows="6" style="width:100%;padding:12px;border-radius:8px;border:1px solid #e5e7eb">
++Write a short professional bio for an AI/IoT engineer named Lerato Mokoena highlighting NVIDIA Developer membership and experience in C++, Python, Swift, blockchain and security.
++      </textarea>
++
++      <div style="display:flex;gap:8px;margin-top:12px">
++        <button class="btn btn-primary" onclick="callGenerate()">Run</button>
++        <button class="btn btn-secondary" onclick="copyPrompt()">Copy Prompt</button>
++        <button class="btn" onclick="closePlayground()">Close</button>
++      </div>
++
++      <hr style="margin:12px 0"/>
++      <h3>Result</h3>
++      <pre id="playgroundResult">No result yet.</pre>
++      <div id="playgroundMeta" style="color:#6b7280;margin-top:6px"></div>
++    </div>
++  </div>
++
++  <footer style="text-align:center;padding:2rem;border-top:1px solid #e5e7eb">
++    &copy; 2025 Aritha AI
++  </footer>
++
++  <script>
++    // Set this to your backend URL if hosting backend separately.
++    // Example: window.__ARITHA_API_URL = "https://aritha-playground-...run.app";
++    window.__ARITHA_API_URL = window.__ARITHA_API_URL || "";
++
++    const OPEN_BTN = document.getElementById('openPlaygroundBtn');
++    const MODAL = document.getElementById('playgroundModal');
++    const PROMPT = document.getElementById('playgroundPrompt');
++    const RESULT = document.getElementById('playgroundResult');
++    const META = document.getElementById('playgroundMeta');
++    const MODEL_INPUT = document.getElementById('modelInput');
++    const TEMP_SELECT = document.getElementById('tempSelect');
++
++    OPEN_BTN.addEventListener('click', () => {
++      MODAL.style.display = 'block';
++    });
++
++    function closePlayground() {
++      MODAL.style.display = 'none';
++    }
++
++    function copyPrompt() {
++      navigator.clipboard.writeText(PROMPT.value).then(() => alert('Prompt copied'));
++    }
++
++    function toggleTheme() {
++      const body = document.body;
++      body.setAttribute('data-theme', body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
++    }
++
++    async function callGenerate() {
++      const prompt = PROMPT.value.trim();
++      if (!prompt) { alert('Please enter a prompt'); return; }
++
++      RESULT.textContent = 'Running…';
++      META.textContent = '';
++
++      const payload = {
++        prompt,
++        max_tokens: 256,
++        temperature: parseFloat(TEMP_SELECT.value || '0.2'),
++        model: MODEL_INPUT.value.trim() || undefined
++      };
++
++      const base = window.__ARITHA_API_URL || '';
++      const url = (base ? base : '') + '/api/v1/generate';
++
++      try {
++        const resp = await fetch(url, {
++          method: 'POST',
++          headers: {'Content-Type': 'application/json'},
++          body: JSON.stringify(payload)
++        });
++        if (!resp.ok) {
++          const txt = await resp.text();
++          RESULT.textContent = `Error (${resp.status}): ${txt}`;
++          return;
++        }
++        const data = await resp.json();
++        RESULT.textContent = data.text || JSON.stringify(data, null, 2);
++        META.textContent = `Provider: ${data.meta?.provider || 'external'} — ${data.meta?.duration_s || '?'}s`;
++      } catch (err) {
++        RESULT.textContent = 'Network/server error: ' + err.message;
++      }
++    }
++
++    window.onclick = function(e) {
++      if (e.target === MODAL) closePlayground();
++    }
++  </script>
++</body>
++</html>
+*** End Patch
