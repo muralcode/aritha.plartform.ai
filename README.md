@@ -52,7 +52,8 @@ Partnered with forward-thinking startups and enterprises across:
 ## 🎖️ Professional Memberships & Developer Programs  
 
 <div align="center">
-  <img src="./.jpg" alt="NVIDIA Developer Program - Lerato Mokoena" width="350"/>
+  <img src="./assets/img/nvidia.jpg
+.jpg" alt="NVIDIA Developer Program - Lerato Mokoena" width="350"/>
 
   **🟩 NVIDIA Developer Program Member**  
   _Member Since: March 2025_  
