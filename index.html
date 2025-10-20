@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aritha AI - Intelligence Everywhere</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary-purple: #A855F7;
@@ -737,6 +738,19 @@
             font-weight: 200; /* Slimmer */
         }
 
+        .private-section {
+            background: var(--border-light);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .private-section:hover {
+            background: var(--primary-purple);
+            color: white;
+        }
+
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -787,8 +801,8 @@
             </button>
         </nav>
         <div class="header-icons">
-            <button class="icon-btn" onclick="openSignUpModal()">👤</button>
-            <a href="https://github.com" class="icon-btn">📚</a> <!-- GitHub icon placeholder -->
+            <button class="icon-btn" onclick="openSignUpModal()"><i class="fas fa-user"></i></button>
+            <a href="https://github.com" class="icon-btn"><i class="fab fa-github"></i></a>
             <label class="switch">
                 <input type="checkbox" onchange="toggleTheme(this)">
                 <span class="slider"></span>
@@ -879,12 +893,12 @@
                     <h3>2 ⊛ Test</h3>
                     <p>Test and compare ARITHA models on-device in the cloud.</p>
                     <div class="features">
-                        <span class="feature">□ Apollo</span>
+                        <span class="feature">□ Aritha-Zion</span>
                         <span class="feature">○ Cloud playground</span>
                     </div>
                     <div style="margin-top: 1rem;">
                         <div style="background: rgba(255, 255, 255, 0.7); padding: 1rem; border-radius: 0.5rem; border: 1px solid var(--border-light); margin-bottom: 1rem;">
-                            <p>Try models on Apollo</p>
+                            <p>Try models on Aritha-Zion</p>
                             <p style="font-size: 0.9rem; color: var(--text-light);">See how our models performs on your own device.</p>
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
                                 <img src="https://via.placeholder.com/20x20/000000/FFFFFF?text=🍎" alt="App Store" style="width: 20px; height: 20px;">
@@ -913,6 +927,21 @@
             </div>
         </section>
 
+        <!-- New Section: Partnering with NVIDIA -->
+        <section id="nvidia-partner" class="page-content">
+            <h1>Partnering with NVIDIA</h1>
+            <p>Aritha AI is proud to partner with NVIDIA to bring cutting-edge GPU acceleration to our agentic AI solutions. Leveraging NVIDIA's advanced hardware, we enable faster training, inference, and deployment of intelligent agents for enterprise and edge applications.</p>
+            <h2>Benefits of the Partnership</h2>
+            <ul>
+                <li>Optimized performance on NVIDIA GPUs for agentic workflows</li>
+                <li>Support for CUDA-accelerated fine-tuning and inference</li>
+                <li>Integration with NVIDIA's AI Enterprise suite</li>
+                <li>Scalable solutions for high-performance computing in AI agents</li>
+                <li>Collaborative innovation in autonomous AI systems</li>
+            </ul>
+            <img src="images/nvidia-logo.png" alt="NVIDIA Logo" style="max-width: 200px; display: block; margin: 2rem auto;">
+        </section>
+
         <!-- Phase 2: Platform Page -->
         <section id="platform" class="page-content">
             <h1>Platform</h1>
@@ -929,48 +958,50 @@
             <p>Sign up for an account, explore our model library, and deploy your first model in minutes using our intuitive dashboard.</p>
         </section>
 
-        <!-- Phase 2: Models Page -->
+        <!-- Phase 2: Models Page - Updated to Agentic AI Products -->
         <section id="models" class="page-content">
-            <h1>Models</h1>
-            <p>Aritha AI offers a curated library of high-performance models optimized for various use cases.</p>
-            <h2>Featured Models</h2>
+            <h1>Agentic AI Products</h1>
+            <p>Aritha AI offers a suite of agentic AI products designed for autonomous decision-making and task execution across various domains.</p>
+            <h2>Featured Products</h2>
             <div class="model-card">
-                <h3>ORAC-2B</h3>
-                <p>A compact hybrid-architecture model ideal for edge devices. Supports vision and text processing.</p>
-                <p>Parameters: 2B | Latency: Low | Use cases: Health analytics, AR/VR</p>
+                <h3>ORAC-2B Agent</h3>
+                <p>A compact agentic model for edge devices, capable of real-time decision-making in constrained environments.</p>
+                <p>Capabilities: Multi-modal input, autonomous actions | Use cases: IoT agents, mobile assistants</p>
             </div>
             <div class="model-card">
-                <h3>ZEN-7B</h3>
-                <p>Advanced model for complex tasks with superior performance. Fine-tunable for enterprise needs.</p>
-                <p>Parameters: 7B | Latency: Medium | Use cases: Document processing, predictive maintenance</p>
+                <h3>ZEN-7B Agent</h3>
+                <p>Advanced agentic system for complex enterprise workflows, with enhanced reasoning and planning abilities.</p>
+                <p>Capabilities: Chain-of-thought reasoning, tool integration | Use cases: Business process automation, intelligent chat agents</p>
             </div>
-            <h2>Model Library</h2>
-            <p>Browse our full catalog in the dashboard, with search filters for size, capabilities, and compatibility.</p>
+            <h2>Agentic AI Catalog</h2>
+            <p>Explore our full range of pre-built agents and customization options in the dashboard. Filter by domain, complexity, and integration requirements.</p>
         </section>
 
-        <!-- Phase 2: Pricing Page -->
+        <!-- Phase 2: Pricing Page - Updated for Agentic AI -->
         <section id="pricing" class="page-content">
             <h1>Pricing</h1>
-            <p>Flexible plans to suit your needs, from free tier to enterprise solutions.</p>
+            <p>Tailored plans for developing and deploying agentic AI solutions, from individual developers to large enterprises.</p>
             <div class="pricing-table">
                 <div class="pricing-card">
-                    <h3>Free</h3>
+                    <h3>Starter</h3>
                     <div class="price">$0/month</div>
                     <ul>
-                        <li>Access to basic models</li>
-                        <li>5 deployments/month</li>
-                        <li>Community support</li>
+                        <li>Access to basic agent models</li>
+                        <li>5 agent deployments/month</li>
+                        <li>Community support for agent development</li>
+                        <li>Limited tool integrations</li>
                     </ul>
                     <button class="btn btn-primary" onclick="openSignUpModal()">Sign Up</button>
                 </div>
                 <div class="pricing-card">
-                    <h3>Pro</h3>
+                    <h3>Professional</h3>
                     <div class="price">$49/month</div>
                     <ul>
-                        <li>All models</li>
-                        <li>Unlimited deployments</li>
-                        <li>Priority support</li>
-                        <li>Custom fine-tuning</li>
+                        <li>All agent models and customizations</li>
+                        <li>Unlimited agent deployments</li>
+                        <li>Priority support for agentic workflows</li>
+                        <li>Advanced tool integrations and fine-tuning</li>
+                        <li>Agent performance analytics</li>
                     </ul>
                     <button class="btn btn-primary" onclick="openSignUpModal()">Subscribe</button>
                 </div>
@@ -978,10 +1009,11 @@
                     <h3>Enterprise</h3>
                     <div class="price">Custom</div>
                     <ul>
-                        <li>Dedicated infrastructure</li>
-                        <li>On-prem deployment</li>
-                        <li>24/7 support</li>
-                        <li>Compliance certifications</li>
+                        <li>Dedicated agent infrastructure</li>
+                        <li>On-prem agent deployment options</li>
+                        <li>24/7 premium support</li>
+                        <li>Custom agent development and compliance</li>
+                        <li>Scalable multi-agent systems</li>
                     </ul>
                     <button class="btn btn-primary" onclick="openSignUpModal()">Contact Sales</button>
                 </div>
@@ -995,12 +1027,9 @@
             <h2>Quick Start Guide</h2>
             <p>1. Create an account<br>2. Select a model<br>3. Specialize and test<br>4. Deploy to your app</p>
             <h2>API Reference</h2>
-            <p>Our RESTful API allows programmatic access to model deployment and management.</p>
-            <pre style="background: var(--border-light); padding: 1rem; border-radius: 0.5rem; overflow-x: auto;">
-curl -X POST https://api.aritha.ai/deploy \
--H "Authorization: Bearer YOUR_API_KEY" \
--d '{"model": "ORAC-2B", "device": "mobile"}'
-            </pre>
+            <div class="private-section" onclick="openSignUpModal()">
+                <p>Sign up or log in to access the full API Reference.</p>
+            </div>
             <h2>Tutorials</h2>
             <ul>
                 <li>Integrating with iOS apps</li>
